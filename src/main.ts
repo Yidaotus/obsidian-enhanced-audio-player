@@ -138,18 +138,18 @@ export default class AudioPlayer extends Plugin {
 
 		this.registerMarkdownPostProcessor((el, ctx) => {
 			const linkTags = el.querySelectorAll("a");
-
 			const audioPlayCommentLinkRe =
-				/playcomment:\/\/(?<playerId>.+):(?<commentName>.+)/g;
+				/audioplayer:\/\/(?<playerId>.+):(?<commentName>.+)/g;
 
 			linkTags.forEach((linkTag) => {
 				const reResult = audioPlayCommentLinkRe.exec(linkTag.href);
 				if (reResult?.groups) {
 					const { playerId, commentName } = reResult.groups;
+					const scopedPlayerId = ctx.docId + playerId;
 					ctx.addChild(
 						new AudioPlayCommentComponent(
 							linkTag,
-							playerId,
+							scopedPlayerId,
 							decodeURI(commentName),
 							() => {
 								new Notice("Audio paused");
@@ -183,6 +183,7 @@ export default class AudioPlayer extends Plugin {
 				const playerIdRe = /id\:(.+)/g;
 				const playerId =
 					playerIdRe.exec(audioParams)?.at(1)?.trim() || "default";
+				const scopedPlayerId = ctx.docId + playerId;
 
 				const audioFileNameRe = /audio\:\s*\[\[(.+)\]\]/g;
 				const audioFileName =
@@ -215,7 +216,7 @@ export default class AudioPlayer extends Plugin {
 						new AudioPlayerRenderer(el, {
 							filepath: link.path,
 							comments: parseComments(audioComments),
-							playerId,
+							playerId: scopedPlayerId,
 							player: this.player,
 						})
 					);
