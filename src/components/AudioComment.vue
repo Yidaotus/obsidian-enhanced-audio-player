@@ -1,27 +1,32 @@
 <template>
-  <div class="comment" @click="emitMovePlayhead">
-    <span class="timestamp">{{ cmt?.timeString }}</span>
-    <span class="content">{{ cmt?.content }}</span>
-  </div>
-  
+	<div class="comment">
+		<span class="timestamp" @click="emitMovePlayhead">{{
+			cmt.timeString
+		}}</span>
+		<span class="content" @click="playFrom">{{ cmt.content }}</span>
+	</div>
 </template>
 
 <script lang="ts">
-import { AudioComment } from '../types';
-import { defineComponent, PropType } from 'vue';
-export default defineComponent({
-  name: 'AudioComment',
-  props: {
-    cmt: Object as PropType<AudioComment>
-  },
-  methods: {
-    emitMovePlayhead() {
-      this.$emit('move-playhead', this.cmt?.timeNumber);
-    },
-    emitRemove() {
-      this.$emit('remove', this.cmt.index);
-    }
-  },
-})
+import { AudioComment } from "../types";
+import { defineComponent, PropType } from "vue";
+import { setIcon } from "obsidian";
 
+export default defineComponent({
+	name: "AudioComment",
+	props: {
+		cmt: {
+			type: Object as PropType<AudioComment>,
+			required: true,
+		},
+	},
+	methods: {
+		playFrom() {
+			this.$emit("play-from", this.cmt.timeNumber);
+		},
+		emitMovePlayhead() {
+			this.$emit("move-playhead", this.cmt.timeNumber);
+		},
+	},
+});
 </script>

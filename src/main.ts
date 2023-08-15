@@ -42,7 +42,7 @@ export default class AudioPlayer extends Plugin {
 			callback: () => {
 				const ev = new Event("addcomment");
 				document.dispatchEvent(ev);
-			}
+			},
 		});
 
 		this.addCommand({
@@ -50,7 +50,7 @@ export default class AudioPlayer extends Plugin {
 			name: "+5 sec",
 			callback: () => {
 				if (player.src) player.currentTime += 5;
-			}
+			},
 		});
 
 		this.addCommand({
@@ -58,7 +58,7 @@ export default class AudioPlayer extends Plugin {
 			name: "-5 sec",
 			callback: () => {
 				if (player.src) player.currentTime -= 5;
-			}
+			},
 		});
 
 		this.registerMarkdownCodeBlockProcessor(
@@ -79,7 +79,7 @@ export default class AudioPlayer extends Plugin {
 					"ogg",
 					"flac",
 					"mp4",
-					"m4a"
+					"m4a",
 				];
 				const link = this.app.metadataCache.getFirstLinkpathDest(
 					getLinkpath(filename),
