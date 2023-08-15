@@ -170,10 +170,13 @@ export default class AudioPlayer extends Plugin {
 			) => {
 				// parse file name
 				const audioParamsAndComments = source.split("\n\n");
-				if (audioParamsAndComments.length < 2) return;
+				if (audioParamsAndComments.length < 1) return;
 
 				const audioParams = audioParamsAndComments[0].trim();
-				const audioComments = audioParamsAndComments[1].trim();
+				let audioComments = "";
+				if (audioParamsAndComments.length > 1) {
+					audioComments = audioParamsAndComments[1].trim();
+				}
 
 				const playerIdRe = /id\:(.+)/g;
 				const playerId =
