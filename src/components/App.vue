@@ -277,16 +277,15 @@ export default defineComponent({
 			if (this.isCurrent()) {
 				this.currentTime = this.audio?.currentTime;
 
-				const nextCommencts = this.commentsSorted.filter(
+				const nextComment = this.commentsSorted.filter(
 					(x: AudioComment) => this.audio?.currentTime >= x.timeNumber
 				);
 
-				if (nextCommencts.length == 1) {
-					this.activeComment = nextCommencts[0];
+				if (nextComment.length == 1) {
+					this.activeComment = nextComment[0];
 				}
-				if (nextCommencts.length > 1) {
-					this.activeComment =
-						nextCommencts[nextCommencts.length - 1];
+				if (nextComment.length > 1) {
+					this.activeComment = nextComment[nextComment.length - 1];
 				}
 			}
 		},

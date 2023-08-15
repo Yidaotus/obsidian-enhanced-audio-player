@@ -87,6 +87,8 @@ export default class AudioPlayer extends Plugin {
 		const body = document.getElementsByTagName("body")[0];
 		body.appendChild(this.player);
 
+		console.log(this.app.workspace.containerEl);
+
 		this.addCommand({
 			id: "pause-audio",
 			name: "Pause Audio",
