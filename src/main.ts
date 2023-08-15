@@ -6,6 +6,24 @@ import {
 } from "obsidian";
 
 import { AudioPlayerRenderer } from "./audioPlayerRenderer";
+import { AudioComment } from "./types";
+import { secondsToNumber } from "./utils";
+
+const parseComments = (commentSection: string): Array<AudioComment> => {
+	const lines = commentSection.split("\n") as string[];
+	const comments = lines.map((x, i) => {
+		const split = x.split(" --- ");
+		const timeStamp = secondsToNumber(split[0]);
+		const cmt: AudioComment = {
+			timeNumber: timeStamp,
+			timeString: split[0],
+			content: split[1],
+			index: i,
+		};
+		return cmt;
+	});
+	return comments;
+};
 
 export default class AudioPlayer extends Plugin {
 	async onload() {
@@ -69,9 +87,21 @@ export default class AudioPlayer extends Plugin {
 				ctx: MarkdownPostProcessorContext
 			) => {
 				// parse file name
-				const re = /\[\[(.+)\]\]/g;
-				const filename = re.exec(source)?.at(1);
-				if (!filename) return;
+				const audioParamsAndComments = source.split("\n\n");
+				if (audioParamsAndComments.length < 2) return;
+
+				const audioParams = audioParamsAndComments[0].trim();
+				const audioComments = audioParamsAndComments[1].trim();
+
+				const playerIdRe = /id\:(.+)/g;
+				const playerId =
+					playerIdRe.exec(audioParams)?.at(1)?.trim() || "default";
+
+				const audioFileNameRe = /audio\:\s*\[\[(.+)\]\]/g;
+				const audioFileName =
+					audioFileNameRe.exec(audioParams)?.at(1) || null;
+
+				if (!audioFileName) return;
 
 				const allowedExtensions = [
 					"mp3",
@@ -82,8 +112,8 @@ export default class AudioPlayer extends Plugin {
 					"m4a",
 				];
 				const link = this.app.metadataCache.getFirstLinkpathDest(
-					getLinkpath(filename),
-					filename
+					getLinkpath(audioFileName),
+					audioFileName
 				);
 				if (!link || !allowedExtensions.includes(link.extension))
 					return;
@@ -92,14 +122,16 @@ export default class AudioPlayer extends Plugin {
 				const container = el.createDiv();
 				container.classList.add("base-container");
 
-				//create vue app
-				ctx.addChild(
-					new AudioPlayerRenderer(el, {
-						filepath: link.path,
-						ctx,
-						player,
-					})
-				);
+				const comments =
+					//create vue app
+					ctx.addChild(
+						new AudioPlayerRenderer(el, {
+							filepath: link.path,
+							comments: parseComments(audioComments),
+							playerId,
+							player,
+						})
+					);
 			}
 		);
 	}

@@ -1,5 +1,3 @@
-import { MarkdownPostProcessorContext } from "obsidian";
-
 export type AudioComment = {
 	content: string;
 	timeNumber: number;
@@ -8,7 +6,15 @@ export type AudioComment = {
 };
 
 export type AudioPlayerRendererOptions = {
-	ctx: MarkdownPostProcessorContext;
+	playerId: string;
+	comments: Array<AudioComment>;
 	player: HTMLAudioElement;
 	filepath: string;
 };
+
+export type AudioPlayCommentEventPayload = {
+	playerId: string;
+	comment: string;
+};
+
+export const PlayCommentCommand = "audioplaycomment";

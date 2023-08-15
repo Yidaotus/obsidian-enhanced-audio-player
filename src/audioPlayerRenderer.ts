@@ -13,7 +13,8 @@ export class AudioPlayerRenderer extends MarkdownRenderChild {
 		this.options = options;
 		this.vueApp = createApp(VueApp, {
 			filepath: this.options.filepath,
-			ctx: this.options.ctx,
+			comments: this.options.comments,
+			playerId: this.options.playerId,
 			mdElement: containerEl,
 			audio: this.options.player,
 		});

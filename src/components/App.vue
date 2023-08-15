@@ -66,27 +66,6 @@
 				+5s
 			</div>
 		</div>
-		<div v-if="showInput" class="comment-input">
-			<input
-				v-model="newComment"
-				@keydown.escape="
-					showInput = false;
-					newComment = '';
-				"
-				type="text"
-				ref="commentInput"
-				@keydown.enter="addComment"
-			/>
-			<button @click="addComment">Add</button>
-			<button
-				@click="
-					showInput = false;
-					newComment = '';
-				"
-			>
-				Cancel
-			</button>
-		</div>
 		<div class="comment-list">
 			<AudioCommentVue
 				v-for="cmt in commentsSorted"
@@ -103,7 +82,11 @@
 <script lang="ts">
 import { TFile, setIcon, MarkdownPostProcessorContext } from "obsidian";
 import { defineComponent, PropType } from "vue";
-import { AudioComment } from "../types";
+import {
+	AudioComment,
+	AudioPlayCommentEventPayload,
+	PlayCommentCommand,
+} from "../types";
 import { secondsToString, secondsToNumber } from "../utils";
 
 import AudioCommentVue from "./AudioComment.vue";
@@ -115,8 +98,9 @@ export default defineComponent({
 	},
 	props: {
 		filepath: String,
-		ctx: Object as PropType<MarkdownPostProcessorContext>,
+		playerId: String,
 		mdElement: Object as PropType<HTMLElement>,
+		comments: Object as PropType<Array<AudioComment>>,
 		audio: Object as PropType<HTMLAudioElement>,
 	},
 	data() {
@@ -134,12 +118,10 @@ export default defineComponent({
 			button1: undefined as HTMLSpanElement | undefined,
 
 			clickCount: 0,
-			showInput: false,
 			newComment: "",
-			comments: [] as AudioComment[],
 			activeComment: null as AudioComment | null,
 
-			ro: ResizeObserver,
+			resizeObserver: ResizeObserver,
 			smallSize: false,
 		};
 	},
@@ -163,9 +145,6 @@ export default defineComponent({
 		},
 	},
 	methods: {
-		getSectionInfo() {
-			return this.ctx.getSectionInfo(this.mdElement);
-		},
 		getParentWidth() {
 			return this.mdElement.clientWidth;
 		},
@@ -231,13 +210,6 @@ export default defineComponent({
 				this.saveCache();
 			});
 		},
-		showCommentInput() {
-			this.showInput = true;
-			setTimeout(() => {
-				const input = this.$refs.commentInput as HTMLInputElement;
-				input.focus();
-			});
-		},
 		barMouseDownHandler(i: number) {
 			this.clickCount += 1;
 			setTimeout(() => {
@@ -249,6 +221,14 @@ export default defineComponent({
 			} else {
 				let time = (i / this.nSamples) * this.duration;
 				this.setPlayheadSecs(time);
+			}
+		},
+		playComment(comment: string) {
+			const targetComment = this.comments.find(
+				(c: AudioComment) => c.content === comment
+			);
+			if (targetComment) {
+				this.playFrom(targetComment.timeNumber);
 			}
 		},
 		playFrom(time: any) {
@@ -314,44 +294,6 @@ export default defineComponent({
 			setIcon(this.button, icon);
 			setIcon(this.button1, icon);
 		},
-
-		addComment() {
-			if (this.newComment.length == 0) return;
-			const sectionInfo = this.getSectionInfo();
-			const lines = sectionInfo.text.split("\n") as string[];
-			const timeStamp = secondsToString(this.currentTime);
-			lines.splice(
-				sectionInfo.lineEnd,
-				0,
-				`${timeStamp} --- ${this.newComment}`
-			);
-
-			window.app.vault.adapter.write(
-				this.ctx.sourcePath,
-				lines.join("\n")
-			);
-		},
-		getComments(): Array<AudioComment> {
-			const sectionInfo = this.getSectionInfo();
-			const lines = sectionInfo.text.split("\n") as string[];
-			const cmtLines = lines.slice(
-				sectionInfo.lineStart + 2,
-				sectionInfo.lineEnd
-			);
-
-			const cmts = cmtLines.map((x, i) => {
-				const split = x.split(" --- ");
-				const timeStamp = secondsToNumber(split[0]);
-				const cmt: AudioComment = {
-					timeNumber: timeStamp,
-					timeString: split[0],
-					content: split[1],
-					index: i,
-				};
-				return cmt;
-			});
-			return cmts;
-		},
 	},
 	created() {
 		this.loadFile();
@@ -362,6 +304,17 @@ export default defineComponent({
 		this.setBtnIcon("play");
 
 		// add event listeners
+		document.addEventListener(
+			PlayCommentCommand,
+			(e: CustomEvent<AudioPlayCommentEventPayload>) => {
+				if (!e.detail.playerId || !e.detail.comment) return;
+
+				if (this.playerId === e.detail.playerId) {
+					this.playComment(e.detail.comment);
+				}
+			}
+		);
+
 		document.addEventListener("allpause", () => {
 			this.setBtnIcon("play");
 		});
@@ -387,16 +340,11 @@ export default defineComponent({
 			this.setBtnIcon(this.audio.paused ? "play" : "pause");
 		}
 
-		// load comments
-		setTimeout(() => {
-			this.comments = this.getComments();
-		});
-
-		this.ro = new ResizeObserver(this.onResize);
-		this.ro.observe(this.$el);
+		this.resizeObserver = new ResizeObserver(this.onResize);
+		this.resizeObserver.observe(this.$el);
 	},
 	beforeDestroy() {
-		this.ro.unobserve(this.$el);
+		this.resizeObserver.unobserve(this.$el);
 	},
 });
 </script>
