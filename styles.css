@@ -114,7 +114,7 @@ If your plugin does not need CSS, delete this file.
 	min-height: 20px;
 	transition: all 0.2s;
 	display: grid;
-	grid-template-columns: 62px 1fr 16px;
+	grid-template-columns: auto 1fr 16px;
 	gap: 10px;
 	padding-right: 4px;
 }
