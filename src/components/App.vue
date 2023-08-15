@@ -1,7 +1,7 @@
 <template>
 	<div class="audio-player-ui" tabindex="0">
-		<div class="horiz">
-			<div v-show="!smallSize" class="vert">
+		<div class="player-container">
+			<div class="controls">
 				<div
 					class="playpause"
 					@click="togglePlay"
@@ -22,7 +22,7 @@
 					-5s
 				</div>
 			</div>
-			<div class="vert wide">
+			<div class="spectrum">
 				<div class="waveform">
 					<div
 						class="wv"
@@ -43,27 +43,6 @@
 						{{ displayedDuration }}
 					</span>
 				</div>
-			</div>
-		</div>
-		<div v-show="smallSize" class="horiz" :style="{ margin: 'auto' }">
-			<div
-				class="playpause seconds"
-				@click="setPlayheadSecs(currentTime - 5)"
-				ref="min5"
-			>
-				-5s
-			</div>
-			<div
-				class="playpause play-button"
-				@click="togglePlay"
-				ref="playpause1"
-			></div>
-			<div
-				class="playpause seconds"
-				@click="setPlayheadSecs(currentTime + 5)"
-				ref="add5"
-			>
-				+5s
 			</div>
 		</div>
 		<div class="comment-list">
@@ -97,11 +76,16 @@ export default defineComponent({
 		AudioCommentVue,
 	},
 	props: {
-		filepath: String,
-		playerId: String,
-		mdElement: Object as PropType<HTMLElement>,
-		comments: Object as PropType<Array<AudioComment>>,
-		audio: Object as PropType<HTMLAudioElement>,
+		filepath: { type: String, required: true },
+		playerId: { type: String, required: true },
+		comments: {
+			type: Object as PropType<Array<AudioComment>>,
+			required: true,
+		},
+		audio: {
+			type: Object as PropType<HTMLAudioElement>,
+			required: true,
+		},
 	},
 	data() {
 		return {
@@ -110,19 +94,15 @@ export default defineComponent({
 			srcPath: "",
 
 			filteredData: [] as number[],
-			nSamples: 150,
+			nSamples: 100,
 			duration: 0,
 			currentTime: 0,
 			playing: false,
 			button: undefined as HTMLSpanElement | undefined,
-			button1: undefined as HTMLSpanElement | undefined,
 
 			clickCount: 0,
 			newComment: "",
 			activeComment: null as AudioComment | null,
-
-			resizeObserver: ResizeObserver,
-			smallSize: false,
 		};
 	},
 	computed: {
@@ -145,14 +125,8 @@ export default defineComponent({
 		},
 	},
 	methods: {
-		getParentWidth() {
-			return this.mdElement.clientWidth;
-		},
 		isCurrent() {
 			return this.audio.src === this.srcPath;
-		},
-		onResize() {
-			this.smallSize = this.$el.clientWidth < 300;
 		},
 		async loadFile() {
 			// read file from vault
@@ -216,12 +190,8 @@ export default defineComponent({
 				this.clickCount = 0;
 			}, 200);
 
-			if (this.clickCount >= 2) {
-				this.showCommentInput();
-			} else {
-				let time = (i / this.nSamples) * this.duration;
-				this.setPlayheadSecs(time);
-			}
+			let time = (i / this.nSamples) * this.duration;
+			this.setPlayheadSecs(time);
 		},
 		playComment(comment: string) {
 			const targetComment = this.comments.find(
@@ -260,12 +230,12 @@ export default defineComponent({
 				this.audio.currentTime = this.currentTime;
 			}
 			this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
-			this.audio?.play();
+			this.audio.play();
 			this.playing = true;
 			this.setBtnIcon("pause");
 		},
 		pause() {
-			this.audio?.pause();
+			this.audio.pause();
 			this.playing = false;
 			this.setBtnIcon("play");
 		},
@@ -290,8 +260,9 @@ export default defineComponent({
 			}
 		},
 		setBtnIcon(icon: string) {
-			setIcon(this.button, icon);
-			setIcon(this.button1, icon);
+			if (this.button) {
+				setIcon(this.button, icon);
+			}
 		},
 	},
 	created() {
@@ -299,29 +270,24 @@ export default defineComponent({
 	},
 	mounted() {
 		this.button = this.$refs.playpause as HTMLSpanElement;
-		this.button1 = this.$refs.playpause1 as HTMLSpanElement;
 		this.setBtnIcon("play");
 
 		// add event listeners
-		document.addEventListener(
-			PlayCommentCommand,
-			(e: CustomEvent<AudioPlayCommentEventPayload>) => {
-				if (!e.detail.playerId || !e.detail.comment) return;
+		document.addEventListener(PlayCommentCommand, ((
+			e: CustomEvent<AudioPlayCommentEventPayload>
+		) => {
+			if (!e.detail.playerId || !e.detail.comment) return;
 
-				if (this.playerId === e.detail.playerId) {
-					this.playComment(e.detail.comment);
-				}
+			if (this.playerId === e.detail.playerId) {
+				this.playComment(e.detail.comment);
 			}
-		);
+		}) as EventListener);
 
 		document.addEventListener("allpause", () => {
 			this.setBtnIcon("play");
 		});
 		document.addEventListener("allresume", () => {
 			if (this.isCurrent()) this.setBtnIcon("pause");
-		});
-		document.addEventListener("addcomment", () => {
-			if (this.isCurrent()) this.showCommentInput();
 		});
 
 		this.audio.addEventListener("ended", () => {
@@ -338,12 +304,7 @@ export default defineComponent({
 			this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
 			this.setBtnIcon(this.audio.paused ? "play" : "pause");
 		}
-
-		this.resizeObserver = new ResizeObserver(this.onResize);
-		this.resizeObserver.observe(this.$el);
 	},
-	beforeDestroy() {
-		this.resizeObserver.unobserve(this.$el);
-	},
+	beforeDestroy() {},
 });
 </script>
