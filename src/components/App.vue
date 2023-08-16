@@ -119,11 +119,12 @@ export default defineComponent({
 			return secondsToString(this.chapterDuration);
 		},
 		currentBar() {
-			return Math.floor(
+			const currentBar =
 				((this.currentTime - (this.chapter?.from || 0)) /
 					this.chapterDuration) *
-					this.sampleResolution
-			);
+				this.sampleResolution;
+			console.log({ currentBar });
+			return currentBar;
 		},
 		commentsSorted() {
 			return this.comments.sort(
@@ -182,7 +183,7 @@ export default defineComponent({
 				let rawData = buf.getChannelData(0);
 				this.duration = buf.duration;
 
-				const sampleRate = audioContext.sampleRate;
+				const sampleRate = buf.sampleRate;
 				let chapterStartAtSample = Math.floor(
 					this.chapter ? this.chapter.from * sampleRate : 0
 				);
@@ -286,6 +287,7 @@ export default defineComponent({
 		},
 		timeUpdateHandler() {
 			if (this.isCurrent()) {
+				console.log({ audioTime: this.audio.currentTime });
 				this.currentTime = this.audio.currentTime;
 
 				const nextComment = this.commentsSorted.filter(
