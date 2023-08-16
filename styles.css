@@ -226,6 +226,7 @@ If your plugin does not need CSS, delete this file.
 	gap: 2px;
 }
 .comment {
+	border-radius: 10px;
 	padding: 5px;
 	border-radius: 3px;
 	margin-left: 5px;
@@ -239,6 +240,9 @@ If your plugin does not need CSS, delete this file.
 }
 
 .comment-icon {
+	-webkit-user-select: none;
+	user-select: none;
+	pointer-events: none;
 	display: flex;
 	height: 24px;
 	width: 24px;
@@ -255,6 +259,7 @@ If your plugin does not need CSS, delete this file.
 
 .comment > .timestamp,
 .comment > .delete-comment {
+	cursor: pointer;
 	color: var(--color-base-50);
 }
 
