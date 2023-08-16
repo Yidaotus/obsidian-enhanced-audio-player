@@ -1,3 +1,8 @@
+export type AudioChapter = {
+	from: number;
+	till: number;
+};
+
 export type AudioComment = {
 	content: string;
 	timeNumber: number;
@@ -10,6 +15,8 @@ export type AudioPlayerRendererOptions = {
 	comments: Array<AudioComment>;
 	player: HTMLAudioElement;
 	filepath: string;
+	type: "small" | "default";
+	chapter?: AudioChapter;
 };
 
 export type AudioPlayCommentEventPayload = {

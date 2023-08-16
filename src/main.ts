@@ -8,7 +8,7 @@ import {
 } from "obsidian";
 
 import { AudioPlayerRenderer } from "./audioPlayerRenderer";
-import { AudioComment, PlayCommentCommand } from "./types";
+import { AudioChapter, AudioComment, PlayCommentCommand } from "./types";
 import { secondsToNumber } from "./utils";
 
 const parseComments = (commentSection: string): Array<AudioComment> => {
@@ -196,6 +196,22 @@ export default class AudioPlayer extends Plugin {
 					playerIdRe.exec(audioParams)?.at(1)?.trim() || "default";
 				const scopedPlayerId = ctx.docId + playerId;
 
+				const typeRe = /type\:(.+)/g;
+				const type = (typeRe.exec(audioParams)?.at(1)?.trim() ||
+					"default") as "small" | "default";
+
+				const chapterRe =
+					/chapter\:\s*(\d{2}:\d{2}:\d{2})\s*;\s*(\d{2}:\d{2}:\d{2})/g;
+				const chapterCapture = chapterRe.exec(audioParams);
+
+				let chapter: AudioChapter | undefined = undefined;
+				if (chapterCapture && chapterCapture.length === 3) {
+					chapter = {
+						from: secondsToNumber(chapterCapture[1]),
+						till: secondsToNumber(chapterCapture[2]),
+					};
+				}
+
 				const audioFileNameRe = /audio\:\s*\[\[(.+)\]\]/g;
 				const audioFileName =
 					audioFileNameRe.exec(audioParams)?.at(1) || null;
@@ -229,6 +245,8 @@ export default class AudioPlayer extends Plugin {
 							comments: parseComments(audioComments),
 							playerId: scopedPlayerId,
 							player: this.player,
+							chapter,
+							type,
 						})
 					);
 			}

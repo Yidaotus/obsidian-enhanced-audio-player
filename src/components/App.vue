@@ -1,21 +1,13 @@
 <template>
 	<div style="position: relative">
-		<div
-			ref="target"
-			class="visibility-target"
-			:class="{ 'visibility-target-buffer': showFixedPlayer }"
-		/>
-		<div
-			:class="{
-				'audio-player-ui': !showFixedPlayer,
-				'audio-fixed-player': showFixedPlayer,
-			}"
-			tabindex="0"
-		>
+		<div class="audio-player-default" tabindex="0">
 			<div class="player-container">
 				<div class="controls">
 					<div
-						class="playpause"
+						:class="{
+							playpause: type === 'default',
+							'playpause-small': type === 'small',
+						}"
 						@click="togglePlay"
 						ref="playpause"
 					/>
@@ -23,22 +15,22 @@
 				<div class="spectrum">
 					<div
 						:class="{
-							waveform: !showFixedPlayer,
-							'waveform-small': showFixedPlayer,
+							waveform: type === 'default',
+							'waveform-small': type === 'small',
 						}"
 					>
 						<div
 							class="wv"
-							v-for="(s, i) in filteredData"
-							:key="srcPath + i"
-							v-bind:class="{ played: i <= currentBar }"
+							v-for="(s, i) in normalizedPcmSamples"
+							:key="fileIdentifier + i"
+							:class="{ played: i < currentBar }"
 							@mousedown="barMouseDownHandler(i)"
 							:style="{
 								height: s * 100 + '%',
 							}"
-						></div>
+						/>
 					</div>
-					<div class="timeline" v-if="!showFixedPlayer">
+					<div class="timeline" v-if="type !== 'small'">
 						<span class="current-time">
 							{{ displayedCurrentTime }}
 						</span>
@@ -49,7 +41,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="comment-list">
+		<div class="comment-list" v-if="type !== 'small'">
 			<AudioCommentVue
 				v-for="cmt in commentsSorted"
 				v-bind:class="{ 'active-comment': cmt == activeComment }"
@@ -65,13 +57,13 @@
 <script lang="ts">
 import { TFile, setIcon, MarkdownPostProcessorContext } from "obsidian";
 import { defineComponent, PropType, ref } from "vue";
-import { useElementVisibility } from "@vueuse/core";
 import {
+	AudioChapter,
 	AudioComment,
 	AudioPlayCommentEventPayload,
 	PlayCommentCommand,
 } from "../types";
-import { secondsToString, secondsToNumber } from "../utils";
+import { secondsToString, secondsToNumber, hashCode } from "../utils";
 
 import AudioCommentVue from "./AudioComment.vue";
 
@@ -80,18 +72,14 @@ export default defineComponent({
 	components: {
 		AudioCommentVue,
 	},
-	setup() {
-		const target = ref(null);
-		const targetIsVisible = useElementVisibility(target);
-
-		return {
-			target,
-			targetIsVisible,
-		};
-	},
 	props: {
 		filepath: { type: String, required: true },
+		type: { type: String, required: true },
 		playerId: { type: String, required: true },
+		chapter: {
+			type: Object as PropType<AudioChapter>,
+			required: false,
+		},
 		comments: {
 			type: Object as PropType<Array<AudioComment>>,
 			required: true,
@@ -107,8 +95,8 @@ export default defineComponent({
 			items: [...Array(100).keys()],
 			srcPath: "",
 
-			filteredData: [] as number[],
-			nSamples: 100,
+			normalizedPcmSamples: [] as number[],
+			sampleResolution: 100,
 			duration: 0,
 			currentTime: 0,
 			playing: false,
@@ -120,18 +108,21 @@ export default defineComponent({
 		};
 	},
 	computed: {
-		showFixedPlayer() {
-			return !this.targetIsVisible && this.playing;
+		fileIdentifier() {
+			const chapterHash = hashCode(JSON.stringify(this.chapter) || "");
+			return `${this.filepath}${chapterHash}`;
 		},
 		displayedCurrentTime() {
 			return secondsToString(this.currentTime);
 		},
 		displayedDuration() {
-			return secondsToString(this.duration);
+			return secondsToString(this.chapterDuration);
 		},
 		currentBar() {
 			return Math.floor(
-				(this.currentTime / this.duration) * this.nSamples
+				((this.currentTime - (this.chapter?.from || 0)) /
+					this.chapterDuration) *
+					this.sampleResolution
 			);
 		},
 		commentsSorted() {
@@ -140,10 +131,15 @@ export default defineComponent({
 					x.timeNumber - y.timeNumber
 			);
 		},
+		chapterDuration() {
+			return this.chapter
+				? this.chapter.till - this.chapter.from
+				: this.duration;
+		},
 	},
 	methods: {
 		isCurrent() {
-			return this.audio.src === this.srcPath;
+			return this.audio.dataset.currentFI === this.fileIdentifier;
 		},
 		async loadFile() {
 			// read file from vault
@@ -160,54 +156,75 @@ export default defineComponent({
 			}
 		},
 		saveCache() {
-			localStorage[`${this.filepath}`] = JSON.stringify(
-				this.filteredData
+			localStorage[this.fileIdentifier] = JSON.stringify(
+				this.normalizedPcmSamples
 			);
-			localStorage[`${this.filepath}_duration`] = this.duration;
+			localStorage[`${this.fileIdentifier}_duration`] = this.duration;
 		},
 		loadCache(): boolean {
-			let cachedData = localStorage[`${this.filepath}`];
+			let cachedData = localStorage[this.fileIdentifier];
 			let cachedDuration = localStorage[`${this.filepath}_duration`];
 
 			if (!cachedData) {
 				return false;
 			}
 
-			this.filteredData = JSON.parse(cachedData);
+			this.normalizedPcmSamples = JSON.parse(cachedData);
 			this.duration = Number.parseFloat(cachedDuration);
 			return true;
 		},
 		async processAudio(path: string) {
 			const arrBuf = await window.app.vault.adapter.readBinary(path);
 			const audioContext = new AudioContext();
-			const tempArray = [] as number[];
+			const tempArray: Array<number> = [];
 
 			audioContext.decodeAudioData(arrBuf, (buf) => {
 				let rawData = buf.getChannelData(0);
 				this.duration = buf.duration;
 
-				const blockSize = Math.floor(rawData.length / this.nSamples);
-				for (let i = 0; i < this.nSamples; i++) {
-					let blockStart = blockSize * i;
+				const sampleRate = audioContext.sampleRate;
+				let chapterStartAtSample = Math.floor(
+					this.chapter ? this.chapter.from * sampleRate : 0
+				);
+				let chapterEndAtSample = Math.floor(
+					this.chapter
+						? this.chapter.till * sampleRate
+						: rawData.length
+				);
+
+				let chapterSampleCount =
+					chapterEndAtSample - chapterStartAtSample;
+
+				const blockSize = Math.floor(
+					chapterSampleCount / this.sampleResolution
+				);
+
+				let highestSample = 0;
+				for (let i = 0; i < this.sampleResolution; i++) {
+					let blockStart = chapterStartAtSample + blockSize * i;
 					let sum = 0;
 					for (let j = 0; j < blockSize; j++) {
 						sum += Math.abs(rawData[blockStart + j]);
 					}
-					tempArray.push(sum / blockSize);
+					const sample = sum / blockSize;
+					tempArray.push(sample);
+					if (sample > highestSample) {
+						highestSample = sample;
+					}
 				}
 
-				let maxval = Math.max(...tempArray);
-				this.filteredData = tempArray.map((x) => x / maxval);
-				this.saveCache();
+				const normalizedPcmSamples = tempArray.map(
+					(x) => x / highestSample
+				);
+				this.normalizedPcmSamples = normalizedPcmSamples;
+				// this.saveCache();
 			});
 		},
 		barMouseDownHandler(i: number) {
-			this.clickCount += 1;
-			setTimeout(() => {
-				this.clickCount = 0;
-			}, 200);
-
-			let time = (i / this.nSamples) * this.duration;
+			//(i / this.nSamples) * this.duration;
+			let time =
+				(i / this.sampleResolution) * this.chapterDuration +
+				(this.chapter?.from || 0);
 			this.setPlayheadSecs(time);
 		},
 		playComment(comment: string) {
@@ -231,12 +248,12 @@ export default defineComponent({
 			}
 		},
 		togglePlay() {
-			if (!this.isCurrent()) {
+			if (this.srcPath !== this.audio.src) {
 				this.audio.src = this.srcPath;
+				this.audio.dataset.currentFI = this.fileIdentifier;
 			}
 
 			if (this.audio.paused) {
-				this.globalPause();
 				this.play();
 			} else {
 				this.pause();
@@ -245,16 +262,22 @@ export default defineComponent({
 		play() {
 			if (this.currentTime > 0) {
 				this.audio.currentTime = this.currentTime;
+			} else {
+				this.audio.currentTime = this.chapter ? this.chapter.from : 0;
 			}
 			this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
-			this.audio.play();
 			this.playing = true;
 			this.setBtnIcon("pause");
+			this.audio.play();
 		},
 		pause() {
 			this.audio.pause();
 			this.playing = false;
 			this.setBtnIcon("play");
+			this.audio.removeEventListener(
+				"timeupdate",
+				this.timeUpdateHandler
+			);
 		},
 		globalPause() {
 			this.playing = false;
@@ -263,10 +286,10 @@ export default defineComponent({
 		},
 		timeUpdateHandler() {
 			if (this.isCurrent()) {
-				this.currentTime = this.audio?.currentTime;
+				this.currentTime = this.audio.currentTime;
 
 				const nextComment = this.commentsSorted.filter(
-					(x: AudioComment) => this.audio?.currentTime >= x.timeNumber
+					(x: AudioComment) => this.audio.currentTime >= x.timeNumber
 				);
 
 				if (nextComment.length == 1) {
@@ -274,6 +297,11 @@ export default defineComponent({
 				}
 				if (nextComment.length > 1) {
 					this.activeComment = nextComment[nextComment.length - 1];
+				}
+
+				if (this.chapter && this.currentTime > this.chapter.till) {
+					this.pause();
+					this.currentTime = this.chapter.from;
 				}
 			}
 		},
@@ -298,10 +326,14 @@ export default defineComponent({
 			this.setBtnIcon("play");
 		},
 		audioEndedListener() {
-			if (this.audio.src === this.srcPath) {
+			if (this.audio.dataset.currentFI === this.fileIdentifier) {
 				this.setBtnIcon("play");
 				this.audio.pause();
 				this.playing = false;
+
+				if (this.chapter) {
+					this.audio.currentTime = this.chapter.from;
+				}
 			}
 		},
 	},
@@ -325,7 +357,7 @@ export default defineComponent({
 			console.log(this.$el.clientWidth);
 		});
 		// get current time
-		if (this.audio.src === this.srcPath) {
+		if (this.audio.dataset.currentFI === this.fileIdentifier) {
 			this.currentTime = this.audio.currentTime;
 			this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
 			this.setBtnIcon(this.audio.paused ? "play" : "pause");
