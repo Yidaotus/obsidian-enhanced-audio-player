@@ -75,7 +75,6 @@ export default defineComponent({
 	props: {
 		filepath: { type: String, required: true },
 		type: { type: String, required: true },
-		playerId: { type: String, required: true },
 		chapter: {
 			type: Object as PropType<AudioChapter>,
 			required: false,
@@ -312,13 +311,6 @@ export default defineComponent({
 				setIcon(this.button, icon);
 			}
 		},
-		playCommentListener(e: CustomEvent<AudioPlayCommentEventPayload>) {
-			if (!e.detail.playerId || !e.detail.comment) return;
-
-			if (this.playerId === e.detail.playerId) {
-				this.playComment(e.detail.comment);
-			}
-		},
 		allResumeListener() {
 			if (this.isCurrent()) this.setBtnIcon("pause");
 		},
@@ -346,10 +338,6 @@ export default defineComponent({
 		this.button = this.$refs.playpause as HTMLSpanElement;
 		this.setBtnIcon("play");
 
-		document.addEventListener(
-			PlayCommentCommand,
-			this.playCommentListener as EventListener
-		);
 		document.addEventListener("allpause", this.allPauseListener);
 		document.addEventListener("allresume", this.allResumeListener);
 
@@ -370,10 +358,6 @@ export default defineComponent({
 		this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
 		document.removeEventListener("allpause", this.allPauseListener);
 		document.removeEventListener("allresume", this.allResumeListener);
-		document.removeEventListener(
-			PlayCommentCommand,
-			this.playCommentListener as EventListener
-		);
 	},
 	beforeDestroy() {},
 });

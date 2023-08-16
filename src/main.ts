@@ -147,33 +147,6 @@ export default class AudioPlayer extends Plugin {
 			}
 		});
 
-		this.registerMarkdownPostProcessor((el, ctx) => {
-			const linkTags = el.querySelectorAll("a");
-			const audioPlayCommentLinkRe =
-				/audioplayer:\/\/(?<playerId>.+):(?<commentName>.+)/g;
-
-			linkTags.forEach((linkTag) => {
-				const reResult = audioPlayCommentLinkRe.exec(linkTag.href);
-				if (reResult?.groups) {
-					const { playerId, commentName } = reResult.groups;
-					const scopedPlayerId = ctx.docId + playerId;
-					ctx.addChild(
-						new AudioPlayCommentComponent(
-							linkTag,
-							scopedPlayerId,
-							decodeURI(commentName),
-							() => {
-								new Notice("Audio paused");
-								const ev = new Event("allpause");
-								document.dispatchEvent(ev);
-								this.player.pause();
-							}
-						)
-					);
-				}
-			});
-		});
-
 		this.registerMarkdownCodeBlockProcessor(
 			"audio-player",
 			(
@@ -190,11 +163,6 @@ export default class AudioPlayer extends Plugin {
 				if (audioParamsAndComments.length > 1) {
 					audioComments = audioParamsAndComments[1].trim();
 				}
-
-				const playerIdRe = /id\:(.+)/g;
-				const playerId =
-					playerIdRe.exec(audioParams)?.at(1)?.trim() || "default";
-				const scopedPlayerId = ctx.docId + playerId;
 
 				const typeRe = /type\:(.+)/g;
 				const type = (typeRe.exec(audioParams)?.at(1)?.trim() ||
@@ -243,7 +211,6 @@ export default class AudioPlayer extends Plugin {
 						new AudioPlayerRenderer(el, {
 							filepath: link.path,
 							comments: parseComments(audioComments),
-							playerId: scopedPlayerId,
 							player: this.player,
 							chapter,
 							type,

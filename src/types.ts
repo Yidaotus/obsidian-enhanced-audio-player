@@ -11,7 +11,6 @@ export type AudioComment = {
 };
 
 export type AudioPlayerRendererOptions = {
-	playerId: string;
 	comments: Array<AudioComment>;
 	player: HTMLAudioElement;
 	filepath: string;

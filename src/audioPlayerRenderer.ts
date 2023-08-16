@@ -14,7 +14,6 @@ export class AudioPlayerRenderer extends MarkdownRenderChild {
 		this.vueApp = createApp(VueApp, {
 			filepath: this.options.filepath,
 			comments: this.options.comments,
-			playerId: this.options.playerId,
 			audio: this.options.player,
 			type: this.options.type || "default",
 			chapter: this.options.chapter,
