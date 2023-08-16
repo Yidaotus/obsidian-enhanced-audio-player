@@ -136,6 +136,17 @@ export default class AudioPlayer extends Plugin {
 			},
 		});
 
+		this.registerObsidianProtocolHandler("audioplayer", (e) => {
+			const parameters = e as {
+				action: string;
+				playerId?: string;
+				chapter?: string;
+			};
+			if (e.das) {
+				e.das;
+			}
+		});
+
 		this.registerMarkdownPostProcessor((el, ctx) => {
 			const linkTags = el.querySelectorAll("a");
 			const audioPlayCommentLinkRe =

@@ -12,15 +12,36 @@ If your plugin does not need CSS, delete this file.
 	display: flex;
 	justify-content: space-between;
 	padding: 10px;
-	user-select: none;
 	cursor: default;
 	flex-direction: column;
 }
 .my-audio {
 	display: none;
 }
+
+.visibility-target-buffer {
+	position: inherit !important;
+}
+
+.visibility-target {
+	height: 150px;
+	width: 100%;
+	-webkit-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	position: absolute;
+}
+
+.waveform-small {
+	width: 100%;
+	height: 20px;
+	justify-content: space-between;
+	align-items: baseline;
+	display: flex;
+}
 .waveform {
 	width: 100%;
+	height: 100px;
 	margin-top: 10px;
 	justify-content: space-between;
 	align-items: baseline;
@@ -96,10 +117,28 @@ If your plugin does not need CSS, delete this file.
 	justify-content: center;
 	align-items: center;
 	display: flex;
-	flex-direction: column-reverse;
+	flex-direction: row;
+}
+
+.audio-fixed-player {
+	display: flex;
+	justify-content: space-between;
+	padding: 0px;
+	cursor: default;
+	flex-direction: column;
+
+	position: fixed;
+	bottom: 40px;
+	left: 0px;
+	width: 100%;
+	height: 50px;
+	background-color: var(--background-modifier-cover);
 }
 
 @media (min-width: 500px) {
+	.audio-fixed-player {
+		bottom: 0px;
+	}
 	.player-container {
 		width: 100%;
 		justify-content: center;

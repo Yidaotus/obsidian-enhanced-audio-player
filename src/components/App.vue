@@ -1,33 +1,51 @@
 <template>
-	<div class="audio-player-ui" tabindex="0">
-		<div class="player-container">
-			<div class="controls">
-				<div
-					class="playpause"
-					@click="togglePlay"
-					ref="playpause"
-				></div>
-			</div>
-			<div class="spectrum">
-				<div class="waveform">
+	<div style="position: relative">
+		<div
+			ref="target"
+			class="visibility-target"
+			:class="{ 'visibility-target-buffer': showFixedPlayer }"
+		/>
+		<div
+			:class="{
+				'audio-player-ui': !showFixedPlayer,
+				'audio-fixed-player': showFixedPlayer,
+			}"
+			tabindex="0"
+		>
+			<div class="player-container">
+				<div class="controls">
 					<div
-						class="wv"
-						v-for="(s, i) in filteredData"
-						:key="srcPath + i"
-						v-bind:class="{ played: i <= currentBar }"
-						@mousedown="barMouseDownHandler(i)"
-						:style="{
-							height: s * 100 + 'px',
-						}"
-					></div>
+						class="playpause"
+						@click="togglePlay"
+						ref="playpause"
+					/>
 				</div>
-				<div class="timeline">
-					<span class="current-time">
-						{{ displayedCurrentTime }}
-					</span>
-					<span class="duration">
-						{{ displayedDuration }}
-					</span>
+				<div class="spectrum">
+					<div
+						:class="{
+							waveform: !showFixedPlayer,
+							'waveform-small': showFixedPlayer,
+						}"
+					>
+						<div
+							class="wv"
+							v-for="(s, i) in filteredData"
+							:key="srcPath + i"
+							v-bind:class="{ played: i <= currentBar }"
+							@mousedown="barMouseDownHandler(i)"
+							:style="{
+								height: s * 100 + '%',
+							}"
+						></div>
+					</div>
+					<div class="timeline" v-if="!showFixedPlayer">
+						<span class="current-time">
+							{{ displayedCurrentTime }}
+						</span>
+						<span class="duration">
+							{{ displayedDuration }}
+						</span>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -46,7 +64,8 @@
 
 <script lang="ts">
 import { TFile, setIcon, MarkdownPostProcessorContext } from "obsidian";
-import { defineComponent, PropType } from "vue";
+import { defineComponent, PropType, ref } from "vue";
+import { useElementVisibility } from "@vueuse/core";
 import {
 	AudioComment,
 	AudioPlayCommentEventPayload,
@@ -60,6 +79,15 @@ export default defineComponent({
 	name: "App",
 	components: {
 		AudioCommentVue,
+	},
+	setup() {
+		const target = ref(null);
+		const targetIsVisible = useElementVisibility(target);
+
+		return {
+			target,
+			targetIsVisible,
+		};
 	},
 	props: {
 		filepath: { type: String, required: true },
@@ -92,6 +120,9 @@ export default defineComponent({
 		};
 	},
 	computed: {
+		showFixedPlayer() {
+			return !this.targetIsVisible && this.playing;
+		},
 		displayedCurrentTime() {
 			return secondsToString(this.currentTime);
 		},
@@ -226,6 +257,7 @@ export default defineComponent({
 			this.setBtnIcon("play");
 		},
 		globalPause() {
+			this.playing = false;
 			const ev = new Event("allpause");
 			document.dispatchEvent(ev);
 		},
@@ -250,6 +282,28 @@ export default defineComponent({
 				setIcon(this.button, icon);
 			}
 		},
+		playCommentListener(e: CustomEvent<AudioPlayCommentEventPayload>) {
+			if (!e.detail.playerId || !e.detail.comment) return;
+
+			if (this.playerId === e.detail.playerId) {
+				this.playComment(e.detail.comment);
+			}
+		},
+		allResumeListener() {
+			if (this.isCurrent()) this.setBtnIcon("pause");
+		},
+		allPauseListener() {
+			this.audio.pause();
+			this.playing = false;
+			this.setBtnIcon("play");
+		},
+		audioEndedListener() {
+			if (this.audio.src === this.srcPath) {
+				this.setBtnIcon("play");
+				this.audio.pause();
+				this.playing = false;
+			}
+		},
 	},
 	created() {
 		this.loadFile();
@@ -258,38 +312,34 @@ export default defineComponent({
 		this.button = this.$refs.playpause as HTMLSpanElement;
 		this.setBtnIcon("play");
 
-		// add event listeners
-		document.addEventListener(PlayCommentCommand, ((
-			e: CustomEvent<AudioPlayCommentEventPayload>
-		) => {
-			if (!e.detail.playerId || !e.detail.comment) return;
+		document.addEventListener(
+			PlayCommentCommand,
+			this.playCommentListener as EventListener
+		);
+		document.addEventListener("allpause", this.allPauseListener);
+		document.addEventListener("allresume", this.allResumeListener);
 
-			if (this.playerId === e.detail.playerId) {
-				this.playComment(e.detail.comment);
-			}
-		}) as EventListener);
-
-		document.addEventListener("allpause", () => {
-			this.setBtnIcon("play");
-		});
-		document.addEventListener("allresume", () => {
-			if (this.isCurrent()) this.setBtnIcon("pause");
-		});
-
-		this.audio.addEventListener("ended", () => {
-			if (this.audio.src === this.srcPath) this.setBtnIcon("play");
-		});
+		this.audio.addEventListener("ended", this.audioEndedListener);
 
 		this.$el.addEventListener("resize", () => {
 			console.log(this.$el.clientWidth);
 		});
-
 		// get current time
 		if (this.audio.src === this.srcPath) {
 			this.currentTime = this.audio.currentTime;
 			this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
 			this.setBtnIcon(this.audio.paused ? "play" : "pause");
 		}
+	},
+	beforeUnmount() {
+		this.audio.removeEventListener("ended", this.audioEndedListener);
+		this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
+		document.removeEventListener("allpause", this.allPauseListener);
+		document.removeEventListener("allresume", this.allResumeListener);
+		document.removeEventListener(
+			PlayCommentCommand,
+			this.playCommentListener as EventListener
+		);
 	},
 	beforeDestroy() {},
 });
