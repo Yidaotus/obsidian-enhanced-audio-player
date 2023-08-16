@@ -255,6 +255,7 @@ export default defineComponent({
 			}
 
 			if (this.audio.paused) {
+				this.globalPause();
 				this.play();
 			} else {
 				this.pause();
