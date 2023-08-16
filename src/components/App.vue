@@ -122,7 +122,6 @@ export default defineComponent({
 				((this.currentTime - (this.chapter?.from || 0)) /
 					this.chapterDuration) *
 				this.sampleResolution;
-			console.log({ currentBar });
 			return currentBar;
 		},
 		commentsSorted() {
@@ -163,7 +162,8 @@ export default defineComponent({
 		},
 		loadCache(): boolean {
 			let cachedData = localStorage[this.fileIdentifier];
-			let cachedDuration = localStorage[`${this.filepath}_duration`];
+			let cachedDuration =
+				localStorage[`${this.fileIdentifier}_duration`];
 
 			if (!cachedData) {
 				return false;
@@ -247,19 +247,20 @@ export default defineComponent({
 			}
 		},
 		togglePlay() {
-			if (this.srcPath !== this.audio.src) {
-				this.audio.src = this.srcPath;
-				this.audio.dataset.currentFI = this.fileIdentifier;
-			}
-
-			if (this.audio.paused) {
-				this.globalPause();
-				this.play();
-			} else {
+			if (this.playing) {
 				this.pause();
+			} else {
+				this.play();
 			}
 		},
 		play() {
+			if (this.audio.dataset.currentFI !== this.fileIdentifier) {
+				this.globalPause();
+				this.audio.dataset.currentFI = this.fileIdentifier;
+			}
+			if (this.srcPath !== this.audio.src) {
+				this.audio.src = this.srcPath;
+			}
 			if (this.currentTime > 0) {
 				this.audio.currentTime = this.currentTime;
 			} else {
@@ -286,7 +287,6 @@ export default defineComponent({
 		},
 		timeUpdateHandler() {
 			if (this.isCurrent()) {
-				console.log({ audioTime: this.audio.currentTime });
 				this.currentTime = this.audio.currentTime;
 
 				const nextComment = this.commentsSorted.filter(
@@ -340,12 +340,8 @@ export default defineComponent({
 
 		document.addEventListener("allpause", this.allPauseListener);
 		document.addEventListener("allresume", this.allResumeListener);
-
 		this.audio.addEventListener("ended", this.audioEndedListener);
 
-		this.$el.addEventListener("resize", () => {
-			console.log(this.$el.clientWidth);
-		});
 		// get current time
 		if (this.audio.dataset.currentFI === this.fileIdentifier) {
 			this.currentTime = this.audio.currentTime;

@@ -4,6 +4,7 @@
 			cmt.timeString
 		}}</span>
 		<span class="content" @click="playFrom">{{ cmt.content }}</span>
+		<span class="comment-icon" ref="iconContainer" />
 	</div>
 </template>
 
@@ -19,6 +20,10 @@ export default defineComponent({
 			type: Object as PropType<AudioComment>,
 			required: true,
 		},
+	},
+	mounted() {
+		const iconContainer = this.$refs.iconContainer as HTMLSpanElement;
+		setIcon(iconContainer, "bookmark");
 	},
 	methods: {
 		playFrom() {

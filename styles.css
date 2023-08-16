@@ -222,6 +222,7 @@ If your plugin does not need CSS, delete this file.
 	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
+	margin-left: 60px;
 	gap: 2px;
 }
 .comment {
@@ -231,9 +232,18 @@ If your plugin does not need CSS, delete this file.
 	min-height: 20px;
 	transition: all 0.2s;
 	display: grid;
-	grid-template-columns: auto 1fr 16px;
+	grid-template-columns: auto 1fr 24px;
 	gap: 10px;
 	padding-right: 4px;
+	align-items: center;
+}
+
+.comment-icon {
+	display: flex;
+	height: 24px;
+	width: 24px;
+	flex-direction: row;
+	align-items: center;
 }
 
 .comment:hover {
