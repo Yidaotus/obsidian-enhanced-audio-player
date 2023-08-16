@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts">
-import { TFile, setIcon, MarkdownPostProcessorContext } from "obsidian";
+import { TFile, setIcon } from "obsidian";
 import { defineComponent, PropType, ref } from "vue";
 import {
 	AudioChapter,
@@ -218,11 +218,10 @@ export default defineComponent({
 					(x) => x / highestSample
 				);
 				this.normalizedPcmSamples = normalizedPcmSamples;
-				// this.saveCache();
+				this.saveCache();
 			});
 		},
 		barMouseDownHandler(i: number) {
-			//(i / this.nSamples) * this.duration;
 			let time =
 				(i / this.sampleResolution) * this.chapterDuration +
 				(this.chapter?.from || 0);

@@ -75,7 +75,7 @@ class AudioPlayCommentComponent extends MarkdownRenderChild {
 }
 
 export default class AudioPlayer extends Plugin {
-	player: HTMLAudioElement;
+	player!: HTMLAudioElement;
 
 	onunload(): void {
 		this.player.remove();
