@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-audio-player",
+	"name": "obsidian-enhanced-audio-player",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Enhanced Audio Plugin for obsidian",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
