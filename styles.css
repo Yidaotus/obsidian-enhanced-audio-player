@@ -34,8 +34,7 @@ If your plugin does not need CSS, delete this file.
 .waveform {
 	position: relative;
 	width: 100%;
-	height: 100px;
-	margin-top: 10px;
+	height: 45px;
 	justify-content: space-between;
 	align-items: baseline;
 	display: flex;
@@ -61,7 +60,7 @@ If your plugin does not need CSS, delete this file.
 }
 .playpause-small {
 	flex: 1;
-	margin: 6px;
+	margin-right: 20px;
 	background-color: var(--color-accent-1);
 	display: flex;
 	justify-content: center;
@@ -83,15 +82,14 @@ If your plugin does not need CSS, delete this file.
 
 .playpause {
 	flex: 1;
-	margin: 6px;
 	background-color: var(--color-accent-1);
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	padding: 10px;
 	border-radius: 30px;
-	max-height: 40px;
-	max-width: 40px;
+	max-height: 30px;
+	max-width: 30px;
 	opacity: 0.8;
 	transition: all 0.15s;
 	cursor: pointer;
@@ -114,70 +112,38 @@ If your plugin does not need CSS, delete this file.
 .controls {
 	display: flex;
 	flex-direction: row;
-	gap: 5px;
 	align-items: center;
-}
-.controls :nth-child(1) {
-	order: 2;
-}
-.controls :nth-child(2) {
-	order: 3;
-}
-.controls :nth-child(3) {
-	order: 1;
+	justify-content: start;
 }
 
-.player-container {
+.controls .title {
+	margin-left: 15px;
+	color: var(--text-normal);
+}
+
+.controls :nth-child(1) {
+	order: 1;
+}
+.controls :nth-child(2) {
+	order: 2;
+}
+.controls :nth-child(3) {
+	order: 3;
+}
+
+.player-container-small {
 	width: 100%;
-	justify-content: center;
-	align-items: center;
+	align-items: start;
 	display: flex;
 	flex-direction: row;
 }
 
-.audio-fixed-player {
-	display: flex;
-	justify-content: space-between;
-	padding: 0px;
-	cursor: default;
-	flex-direction: column;
-
-	position: fixed;
-	bottom: 40px;
-	left: 0px;
+.player-container {
 	width: 100%;
-	height: 50px;
-	background-color: var(--background-modifier-cover);
-}
-
-@media (min-width: 500px) {
-	.audio-fixed-player {
-		bottom: 0px;
-	}
-	.player-container {
-		width: 100%;
-		justify-content: center;
-		align-items: center;
-		display: flex;
-		flex-direction: row;
-	}
-
-	.controls {
-		display: flex;
-		flex-direction: column;
-		padding-right: 10px;
-		align-items: center;
-	}
-
-	.controls :nth-child(1) {
-		order: 1;
-	}
-	.controls :nth-child(2) {
-		order: 2;
-	}
-	.controls :nth-child(3) {
-		order: 3;
-	}
+	align-items: start;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
 }
 
 .play-comment-container {
@@ -222,7 +188,6 @@ If your plugin does not need CSS, delete this file.
 	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
-	margin-left: 60px;
 	gap: 2px;
 }
 .comment {

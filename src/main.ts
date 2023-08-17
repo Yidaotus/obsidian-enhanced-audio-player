@@ -164,6 +164,10 @@ export default class AudioPlayer extends Plugin {
 					audioComments = audioParamsAndComments[1].trim();
 				}
 
+				const titleRe = /title\:(.+)/g;
+				const title =
+					titleRe.exec(audioParams)?.at(1)?.trim() || undefined;
+
 				const typeRe = /type\:(.+)/g;
 				const type = (typeRe.exec(audioParams)?.at(1)?.trim() ||
 					"default") as "small" | "default";
@@ -213,6 +217,7 @@ export default class AudioPlayer extends Plugin {
 							comments: parseComments(audioComments),
 							player: this.player,
 							chapter,
+							title,
 							type,
 						})
 					);

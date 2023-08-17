@@ -1,7 +1,12 @@
 <template>
 	<div style="position: relative">
 		<div class="audio-player-default" tabindex="0">
-			<div class="player-container">
+			<div
+				:class="{
+					'player-container-small': type === 'small',
+					'player-container': type !== 'small',
+				}"
+			>
 				<div class="controls">
 					<div
 						:class="{
@@ -11,6 +16,9 @@
 						@click="togglePlay"
 						ref="playpause"
 					/>
+					<div v-if="type !== 'small'" class="title">
+						{{ displayName }}
+					</div>
 				</div>
 				<div class="spectrum">
 					<div
@@ -66,6 +74,7 @@ import {
 import { secondsToString, secondsToNumber, hashCode } from "../utils";
 
 import AudioCommentVue from "./AudioComment.vue";
+import { type } from "os";
 
 export default defineComponent({
 	name: "App",
@@ -73,6 +82,7 @@ export default defineComponent({
 		AudioCommentVue,
 	},
 	props: {
+		title: { type: String, required: false },
 		filepath: { type: String, required: true },
 		type: { type: String, required: true },
 		chapter: {
@@ -107,6 +117,9 @@ export default defineComponent({
 		};
 	},
 	computed: {
+		displayName() {
+			return this.title ? this.title : this.filepath.split("/").at(-1);
+		},
 		fileIdentifier() {
 			const chapterHash = hashCode(JSON.stringify(this.chapter) || "");
 			return `${this.filepath}${chapterHash}`;

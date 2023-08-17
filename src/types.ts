@@ -16,6 +16,7 @@ export type AudioPlayerRendererOptions = {
 	filepath: string;
 	type: "small" | "default";
 	chapter?: AudioChapter;
+	title?: string;
 };
 
 export type AudioPlayCommentEventPayload = {
