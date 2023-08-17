@@ -13,6 +13,7 @@
 ````
 ```audio-player
 audio: [[my_audio.ogg]]
+title: Yuru Talk 18
 
 00:00:37 --- Section 1
 00:02:42 --- Section 2
@@ -35,6 +36,13 @@ type: small
 this will only play the given chapter (00:00:37 - 00:01:06) of the given audio file.
 
 ![image](/preview/mini.png)
+
+### Options
+
+-   `audio` - Internal obsidian link to the audio file
+-   `title` - Optional: Title to display
+-   `type` - Optional: Set to 'small' for smaller player
+-   `chapter` - Optional: Part of the audio to play
 
 ### Two simple Commands
 
