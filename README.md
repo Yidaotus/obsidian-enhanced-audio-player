@@ -51,6 +51,6 @@ accessable through command menu (Ctrl-P)
 1. **Pause Audio** to pause whatever audio is playing
 2. **Resume Audio** to resume
 
-## Warning for VBR (variable bitrate) Audio files
+## Warning: VBR (variable bitrate) Audio files can desync
 
-Audio files using VBR can desync the waveform with the played audio. If you can use CBR for your audio files. See [here](https://terrillthompson.com/624) for more info.
+Audio files using VBR can desync the waveform with the played audio. If you can, use CBR for your audio files. See [here](https://terrillthompson.com/624) for more info.
